@@ -1,13 +1,10 @@
 streamlit
+streamlit-webrtc
 openai
-oracledb
-supabase
-pandas
-reportlab
-numpy
-sounddevice
-scipy
 faster-whisper
+numpy
+scipy
+av
  
  
 
