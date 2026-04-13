@@ -5,8 +5,4 @@ faster-whisper
 numpy
 scipy
 av
- 
- 
-
- 
- 
+ffmpeg-python

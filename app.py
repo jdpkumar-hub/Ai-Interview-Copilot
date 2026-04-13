@@ -27,7 +27,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # ==============================
 @st.cache_resource
 def load_model():
-    return WhisperModel("base")
+    return WhisperModel("tiny")
 
 model = load_model()
 
@@ -58,7 +58,21 @@ def transcribe(audio_chunks, fs=16000):
 
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
     from scipy.io.wavfile import write
-    write(temp_file.name, fs, audio_np)
+
+# Normalize + convert to int16 (VERY IMPORTANT)
+audio_np = audio_np.astype(np.float32)
+
+# Convert stereo → mono if needed
+if len(audio_np.shape) > 1:
+    audio_np = np.mean(audio_np, axis=1)
+
+# Normalize
+audio_np = audio_np / np.max(np.abs(audio_np) + 1e-9)
+
+# Convert to int16 (FFmpeg friendly)
+audio_int16 = (audio_np * 32767).astype(np.int16)
+
+write(temp_file.name, fs, audio_int16)
 
     segments, _ = model.transcribe(temp_file.name)
     text = " ".join([seg.text for seg in segments]).strip()
