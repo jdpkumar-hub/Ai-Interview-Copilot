@@ -1,22 +1,21 @@
 # ==========================================
-# AI INTERVIEW COPILOT - PRO VERSION
-# Real-time + Continuous + Streaming + Better UI
+# AI INTERVIEW COPILOT - ADVANCED (AUTO + LIVE + STEALTH)
 # ==========================================
 
 import streamlit as st
-import sounddevice as sd
+from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
 import numpy as np
-import queue
-import threading
+import av
 import tempfile
 import os
 from faster_whisper import WhisperModel
 from openai import OpenAI
+import time
 
 # ==============================
 # CONFIG
 # ==============================
-st.set_page_config(page_title="AI Copilot PRO", layout="wide")
+st.set_page_config(page_title="AI Copilot Advanced", layout="wide")
 
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -33,23 +32,28 @@ model = load_model()
 # ==============================
 # SESSION STATE
 # ==============================
-if "running" not in st.session_state:
-    st.session_state.running = False
+if "last_text" not in st.session_state:
+    st.session_state.last_text = ""
 
 # ==============================
-# AUDIO STREAM (REAL-TIME)
+# AUDIO PROCESSOR
 # ==============================
-q = queue.Queue()
+class AudioProcessor(AudioProcessorBase):
+    def __init__(self):
+        self.buffer = []
+        self.last_process_time = time.time()
 
-def audio_callback(indata, frames, time, status):
-    if status:
-        print(status)
-    q.put(indata.copy())
+    def recv(self, frame: av.AudioFrame) -> av.AudioFrame:
+        audio = frame.to_ndarray()
+        self.buffer.append(audio)
+        return frame
 
 # ==============================
 # TRANSCRIBE
 # ==============================
-def transcribe_audio(audio_np, fs=16000):
+def transcribe(audio_chunks, fs=16000):
+    audio_np = np.concatenate(audio_chunks, axis=0)
+
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
     from scipy.io.wavfile import write
     write(temp_file.name, fs, audio_np)
@@ -61,13 +65,13 @@ def transcribe_audio(audio_np, fs=16000):
     return text
 
 # ==============================
-# AI RESPONSE (STREAMING)
+# STREAMING AI RESPONSE
 # ==============================
-def generate_answer_stream(question, mode="General"):
+def generate_answer_stream(question, mode, placeholder):
     if mode == "DBA":
-        system_prompt = "You are a senior Oracle DBA with 20 years experience. Give short, powerful interview answers."
+        system_prompt = "You are a senior Oracle DBA. Give short, sharp interview answers."
     else:
-        system_prompt = "You are an expert interview assistant. Give short, confident answers."
+        system_prompt = "You are an interview assistant. Give short, confident answers."
 
     stream = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -82,88 +86,77 @@ def generate_answer_stream(question, mode="General"):
     for chunk in stream:
         if chunk.choices[0].delta.content:
             full += chunk.choices[0].delta.content
-            yield full
-
-# ==============================
-# CONTINUOUS LISTENING LOOP
-# ==============================
-def listen_loop(answer_placeholder, question_placeholder, mode):
-    fs = 16000
-
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=fs):
-        while st.session_state.running:
-            audio_data = []
-
-            for _ in range(20):  # ~2 seconds chunks
-                audio_data.append(q.get())
-
-            audio_np = np.concatenate(audio_data, axis=0)
-
-            text = transcribe_audio(audio_np, fs)
-
-            if text and len(text) > 5:
-                question_placeholder.markdown(f"**🗣 Interviewer:** {text}")
-
-                stream = generate_answer_stream(text, mode)
-                for partial in stream:
-                    answer_placeholder.markdown(f"**🤖 Answer:**\n\n{partial}")
+            placeholder.markdown(f"**🤖 Answer:**\n\n{full}")
 
 # ==============================
 # UI
 # ==============================
 
-st.title("🚀 AI Interview Copilot PRO")
+st.title("🕶️ AI Interview Copilot (Stealth Mode)")
 
-col1, col2 = st.columns([1, 2])
+col1, col2 = st.columns([1,2])
 
 with col1:
     st.subheader("⚙️ Settings")
-
     mode = st.selectbox("Mode", ["General", "DBA"])
-
-    if not st.session_state.running:
-        if st.button("▶ Start Real-Time Listening"):
-            st.session_state.running = True
-    else:
-        if st.button("⏹ Stop"):
-            st.session_state.running = False
+    auto_mode = st.toggle("⚡ Auto Mode (No Click)", True)
 
 with col2:
-    st.subheader("🧠 Live Copilot")
+    st.subheader("🎤 Live Assistant")
+
+    ctx = webrtc_streamer(
+        key="auto-mic",
+        mode=WebRtcMode.SENDONLY,
+        audio_processor_factory=AudioProcessor,
+        media_stream_constraints={"audio": True, "video": False},
+    )
 
     question_placeholder = st.empty()
     answer_placeholder = st.empty()
 
 # ==============================
-# RUN THREAD
+# AUTO PROCESS LOOP
 # ==============================
 
-if st.session_state.running:
-    threading.Thread(
-        target=listen_loop,
-        args=(answer_placeholder, question_placeholder, mode),
-        daemon=True
-    ).start()
+if ctx.audio_processor and auto_mode:
+    audio_processor = ctx.audio_processor
+
+    if len(audio_processor.buffer) > 20:
+        audio_chunks = audio_processor.buffer.copy()
+        audio_processor.buffer = []
+
+        text = transcribe(audio_chunks)
+
+        if text and text != st.session_state.last_text and len(text) > 5:
+            st.session_state.last_text = text
+
+            question_placeholder.markdown(f"**🗣 Interviewer:** {text}")
+
+            generate_answer_stream(text, mode, answer_placeholder)
+
+# ==============================
+# STEALTH STYLE
+# ==============================
+
+st.markdown("""
+<style>
+body {background-color: #0e1117; color: white;}
+.stButton {display:none;}
+h1, h2, h3 {color:#00ffcc;}
+</style>
+""", unsafe_allow_html=True)
 
 # ==============================
 # FOOTER
 # ==============================
 st.markdown("---")
-st.caption("🔥 Real-Time AI Copilot | Streaming | Continuous Listening")
+st.caption("🕶️ Stealth AI | Auto Listening | Live Answers | Browser Mic")
 
 # ==========================================
-# INCLUDED FEATURES
+# FEATURES INCLUDED
 # ==========================================
-# ✅ Real-time listening (no button per question)
-# ✅ Continuous transcription
-# ✅ Streaming AI answers (word-by-word)
-# ✅ DBA specialized mode
-# ==========================================
-
-# ==========================================
-# NEXT (OPTIONAL)
-# ==========================================
-# - Zoom/Teams system audio capture
-# - Voice answer (earpiece mode)
-# - Resume-aware answers
+# ✅ Auto speech detection (no button)
+# ✅ Live transcription updates
+# ✅ Streaming AI answers
+# ✅ Stealth dark UI
 # ==========================================
