@@ -64,7 +64,7 @@ def transcribe(audio_chunks, fs=16000):
 
 # Convert stereo → mono if needed
     if len(audio_np.shape) > 1:
-    audio_np = np.mean(audio_np, axis=1)
+        audio_np = np.mean(audio_np, axis=1)
 
 # Normalize
     audio_np = audio_np / np.max(np.abs(audio_np) + 1e-9)
