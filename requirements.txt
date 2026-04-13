@@ -1,0 +1,15 @@
+streamlit
+openai
+oracledb
+supabase
+pandas
+reportlab
+numpy
+sounddevice
+scipy
+faster-whisper
+ 
+ 
+
+ 
+ 
