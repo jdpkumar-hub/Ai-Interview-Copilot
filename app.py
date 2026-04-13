@@ -120,29 +120,29 @@ with col1:
 with col2:
     st.subheader("🎤 Live Assistant")
 
-  try:
-    ctx = webrtc_streamer(
-        key="auto-mic",
-        mode=WebRtcMode.SENDONLY,
-        audio_processor_factory=AudioProcessor,
-        media_stream_constraints={"audio": True, "video": False},
-        rtc_configuration={
-            "iceServers": [
-                {"urls": ["stun:stun.l.google.com:19302"]},
-                {
-                    "urls": ["turn:openrelay.metered.ca:80"],
-                    "username": "openrelayproject",
-                    "credential": "openrelayproject",
-                },
-            ]
-        },
-    )
-except Exception as e:
-    st.error("❌ WebRTC failed. Switching to fallback mode.")
-    ctx = None
+    try:
+        ctx = webrtc_streamer(
+            key="auto-mic",
+            mode=WebRtcMode.SENDONLY,
+            audio_processor_factory=AudioProcessor,
+            media_stream_constraints={"audio": True, "video": False},
+            rtc_configuration={
+                "iceServers": [
+                    {"urls": ["stun:stun.l.google.com:19302"]},
+                    {
+                        "urls": ["turn:openrelay.metered.ca:80"],
+                        "username": "openrelayproject",
+                        "credential": "openrelayproject",
+                    },
+                ]
+            },
+        )
+    except Exception as e:
+        st.error("❌ WebRTC failed. Switching to fallback mode.")
+        ctx = None
 
-    question_placeholder = st.empty()
-    answer_placeholder = st.empty()
+        question_placeholder = st.empty()
+        answer_placeholder = st.empty()
 
 # ==============================
 # AUTO PROCESS LOOP
