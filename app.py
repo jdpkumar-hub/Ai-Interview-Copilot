@@ -120,7 +120,7 @@ with col1:
 with col2:
     st.subheader("🎤 Live Assistant")
 
-    try:
+  try:
     ctx = webrtc_streamer(
         key="auto-mic",
         mode=WebRtcMode.SENDONLY,
