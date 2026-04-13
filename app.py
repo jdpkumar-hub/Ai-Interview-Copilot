@@ -121,11 +121,16 @@ with col2:
     st.subheader("🎤 Live Assistant")
 
     ctx = webrtc_streamer(
-        key="auto-mic",
-        mode=WebRtcMode.SENDONLY,
-        audio_processor_factory=AudioProcessor,
-        media_stream_constraints={"audio": True, "video": False},
-    )
+    key="auto-mic",
+    mode=WebRtcMode.SENDONLY,
+    audio_processor_factory=AudioProcessor,
+    media_stream_constraints={"audio": True, "video": False},
+    rtc_configuration={
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},
+        ]
+    },
+)
 
     question_placeholder = st.empty()
     answer_placeholder = st.empty()
