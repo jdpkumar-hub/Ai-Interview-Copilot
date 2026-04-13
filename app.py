@@ -1,6 +1,8 @@
 # ==========================================
 # AI INTERVIEW COPILOT - ADVANCED (AUTO + LIVE + STEALTH)
 # ==========================================
+# NOTE: sounddevice is NOT used. Browser mic via streamlit-webrtc only.
+
 
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
