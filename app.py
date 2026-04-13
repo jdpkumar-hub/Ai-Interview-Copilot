@@ -120,27 +120,27 @@ with col1:
 with col2:
     st.subheader("🎤 Live Assistant")
 
+    try:
     ctx = webrtc_streamer(
-    key="auto-mic",
-    mode=WebRtcMode.SENDONLY,
-    audio_processor_factory=AudioProcessor,
-    media_stream_constraints={"audio": True, "video": False},
-    rtc_configuration={
-        "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},
-            {
-                "urls": ["turn:openrelay.metered.ca:80"],
-                "username": "openrelayproject",
-                "credential": "openrelayproject",
-            },
-            {
-                "urls": ["turn:openrelay.metered.ca:443"],
-                "username": "openrelayproject",
-                "credential": "openrelayproject",
-            },
-        ]
-    },
-)
+        key="auto-mic",
+        mode=WebRtcMode.SENDONLY,
+        audio_processor_factory=AudioProcessor,
+        media_stream_constraints={"audio": True, "video": False},
+        rtc_configuration={
+            "iceServers": [
+                {"urls": ["stun:stun.l.google.com:19302"]},
+                {
+                    "urls": ["turn:openrelay.metered.ca:80"],
+                    "username": "openrelayproject",
+                    "credential": "openrelayproject",
+                },
+            ]
+        },
+    )
+except Exception as e:
+    st.error("❌ WebRTC failed. Switching to fallback mode.")
+    ctx = None
+
     question_placeholder = st.empty()
     answer_placeholder = st.empty()
 
@@ -148,7 +148,7 @@ with col2:
 # AUTO PROCESS LOOP
 # ==============================
 
-if ctx.audio_processor and auto_mode:
+if ctx and ctx.audio_processor:
     audio_processor = ctx.audio_processor
 
     if len(audio_processor.buffer) > 20:
